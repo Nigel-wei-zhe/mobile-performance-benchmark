@@ -1,0 +1,15 @@
+{
+  "project": "Website Performance Benchmark",
+  "targets": [
+    {
+      "id": "new",
+      "label": "New website",
+      "url": "https://www.example.com/new"
+    },
+    {
+      "id": "old",
+      "label": "Old website",
+      "url": "https://www.example.com/old"
+    }
+  ]
+}

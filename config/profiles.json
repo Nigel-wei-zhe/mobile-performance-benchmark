@@ -1,0 +1,32 @@
+{
+  "device": {
+    "name": "iPhone 12",
+    "width": 390,
+    "height": 844,
+    "deviceScaleFactor": 3,
+    "mobile": true,
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+  },
+  "networks": {
+    "fast4g": {
+      "label": "Fast 4G",
+      "latency": 40,
+      "downloadThroughput": 1250000,
+      "uploadThroughput": 625000
+    },
+    "slow4g": {
+      "label": "Slow 4G",
+      "latency": 150,
+      "downloadThroughput": 200000,
+      "uploadThroughput": 100000
+    }
+  },
+  "defaults": {
+    "runs": 10,
+    "network": "fast4g",
+    "cache": "cold",
+    "cpu": 4,
+    "settleMs": 3000,
+    "chromePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  }
+}
