@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Mobile website performance benchmark for comparing two targets.",
   "packageManager": "pnpm@10.0.0",
+  "bin": {
+    "mobile-performance-benchmark-mcp": "src/mcp/server.mjs"
+  },
   "scripts": {
     "benchmark": "node scripts/run-benchmark.mjs",
     "benchmark:fast": "node scripts/run-benchmark.mjs --runs 5 --network fast4g --cache cold --cpu 4",
@@ -12,6 +15,7 @@
     "report": "node scripts/generate-html-report.mjs --open",
     "report:html": "node scripts/generate-html-report.mjs --open",
     "report:md": "node scripts/generate-report.mjs",
+    "mcp": "node src/mcp/server.mjs",
     "doctor": "node scripts/doctor.mjs"
   },
   "engines": {

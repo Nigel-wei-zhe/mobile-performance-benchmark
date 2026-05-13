@@ -97,7 +97,54 @@ pnpm run report
 
 # 產生 Markdown 與 CSV 報告
 pnpm run report:md
+
+# 啟動 MCP stdio server
+pnpm run mcp
 ```
+
+## MCP 整合
+
+專案提供一個 stdio MCP server，可讓支援 MCP 的 AI host 直接呼叫 benchmark 工具：
+
+```bash
+pnpm run mcp
+```
+
+也可以直接透過 GitHub repo 啟動：
+
+```bash
+npx -y github:Nigel-wei-zhe/mobile-performance-benchmark
+```
+
+MCP host 設定範例：
+
+```json
+{
+  "mcpServers": {
+    "mobile-performance-benchmark": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:Nigel-wei-zhe/mobile-performance-benchmark"
+      ]
+    }
+  }
+}
+```
+
+目前 MCP server 提供：
+
+- Tools: `doctor`, `run_benchmark`, `list_results`, `summarize_latest_result`, `compare_targets`, `generate_html_report`, `generate_markdown_report`
+- Resources: `benchmark://config/profiles`, `benchmark://targets/current`, `benchmark://latest/raw`, `benchmark://latest/summary`
+- Prompts: `analyze_latest_result`, `compare_targets`
+
+使用 `npx` 或 GitHub repo 啟動時，MCP server 不會假設套件目錄內存在使用者的 `target.json`。建議由使用者在對話中提供 URL，讓 MCP host 呼叫 `run_benchmark` 的 `url` 參數；需要比較多個網站時，傳入 inline `targets`。
+
+`run_benchmark` 支援三種輸入：
+
+- `url`: 單一網址量測，最適合一般 MCP 對話。
+- `targets`: 多個 target 比較，會建立暫存 target config，不會覆寫本機 `target.json`。
+- `targetFile`: 明確指定 target config 檔案路徑。
 
 ## HTML 報告功能
 

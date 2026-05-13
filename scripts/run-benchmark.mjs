@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
+import { resultsDir, profilesPath } from '../src/paths.mjs';
+import { loadTargetConfig } from '../src/target-config.mjs';
 
 class CDPClient {
   static async connect(url) {
@@ -78,12 +80,9 @@ class CDPClient {
   }
 }
 
-const root = path.resolve(new URL('..', import.meta.url).pathname);
-const resultsDir = path.join(root, 'results');
-const targetConfig = await loadTargetConfig();
-const profiles = JSON.parse(await readFile(path.join(root, 'config/profiles.json'), 'utf8'));
-
+const profiles = JSON.parse(await readFile(profilesPath, 'utf8'));
 const args = parseArgs(process.argv.slice(2), profiles.defaults);
+const targetConfig = await loadTargetConfig(args.targetFile);
 const device = profiles.device;
 const network = profiles.networks[args.network];
 
@@ -136,41 +135,6 @@ try {
 } finally {
   if (chromeProcess) await stopChrome(chromeProcess);
   await rm(profileDir, { recursive: true, force: true });
-}
-
-async function loadTargetConfig() {
-  const targetPath = path.join(root, 'target.json');
-  let config;
-
-  try {
-    config = JSON.parse(await readFile(targetPath, 'utf8'));
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      throw new Error('No target.json found. Create target.json in the project root before running benchmark.');
-    }
-    throw error;
-  }
-
-  if (!Array.isArray(config.targets) || config.targets.length < 1) {
-    throw new Error('target.json must include at least one target.');
-  }
-
-  const targetIds = new Set();
-
-  for (const target of config.targets) {
-    if (!target.id || !target.label || !target.url) {
-      throw new Error('Each target in target.json must include id, label, and url.');
-    }
-    if (targetIds.has(target.id)) {
-      throw new Error(`Duplicate target id in target.json: "${target.id}".`);
-    }
-    targetIds.add(target.id);
-  }
-
-  return {
-    project: config.project || 'Website Performance Benchmark',
-    targets: config.targets
-  };
 }
 
 function parseArgs(argv, defaults) {

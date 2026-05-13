@@ -170,6 +170,7 @@ function metricStatsLines(targetId) {
   return Object.entries(reportData.metricLabels).map(([metric, label]) => {
     const item = targetSummary[metric] || {};
     const unit = reportData.metricUnits[metric];
+    const digits = metric === 'cls' ? 3 : 0;
     return '- ' + label + ' (' + unit + '): median=' + formatValue(item.median, digits) + ', p75=' + formatValue(item.p75, digits) + ', min=' + formatValue(item.min, digits) + ', max=' + formatValue(item.max, digits);
   }).join('\\n');
 }
