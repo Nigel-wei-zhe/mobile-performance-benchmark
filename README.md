@@ -138,13 +138,24 @@ MCP host 設定範例：
 - Resources: `benchmark://config/profiles`, `benchmark://targets/current`, `benchmark://latest/raw`, `benchmark://latest/summary`
 - Prompts: `analyze_latest_result`, `compare_targets`
 
-使用 `npx` 或 GitHub repo 啟動時，MCP server 不會假設套件目錄內存在使用者的 `target.json`。建議由使用者在對話中提供 URL，讓 MCP host 呼叫 `run_benchmark` 的 `url` 參數；需要比較多個網站時，傳入 inline `targets`。
+使用 `npx` 或 GitHub repo 啟動時，MCP server 不會假設套件目錄內存在使用者的 `target.json`。MCP 的 `run_benchmark` 只接受對話中提供的單一 `url`，並在內部建立暫存 target config 執行測試。
 
-`run_benchmark` 支援三種輸入：
+`doctor` 會檢查 Node.js、Chrome 可執行檔、Chrome 版本，並實際啟動 headless Chrome 確認 CDP endpoint 可連線。若 Chrome 不在預設路徑，可在 MCP tool 參數傳入 `chromePath`。
 
-- `url`: 單一網址量測，最適合一般 MCP 對話。
-- `targets`: 多個 target 比較，會建立暫存 target config，不會覆寫本機 `target.json`。
-- `targetFile`: 明確指定 target config 檔案路徑。
+MCP 呼叫範例：
+
+```json
+{
+  "url": "https://www.example.com",
+  "runs": 5,
+  "network": "fast4g",
+  "cache": "cold",
+  "cpu": 4,
+  "chromePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+}
+```
+
+多 target 比較與 `target.json`/`targetFile` 屬於本地 CLI 工作流，請使用 `pnpm run benchmark` 搭配專案根目錄的 `target.json`。
 
 ## HTML 報告功能
 

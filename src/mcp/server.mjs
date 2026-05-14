@@ -20,6 +20,7 @@ import {
   writeMarkdownReport
 } from '../reporting.mjs';
 import { loadTargetConfig, normalizeTargetConfig } from '../target-config.mjs';
+import { runDoctor } from '../doctor.mjs';
 
 const execFileAsync = promisify(execFile);
 const protocolVersion = '2025-11-25';
@@ -31,7 +32,12 @@ const tools = [
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      properties: {}
+      properties: {
+        chromePath: {
+          type: 'string',
+          description: 'Optional Chrome executable path. Defaults to CHROME_PATH or config/profiles.json.'
+        }
+      }
     }
   },
   {
@@ -92,15 +98,16 @@ const tools = [
   },
   {
     name: 'run_benchmark',
-    description: 'Run a mobile performance benchmark. This launches local Chrome and writes raw results.',
+    description: 'Run a mobile performance benchmark for one URL. This launches local Chrome and writes raw results.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
+      required: ['url'],
       properties: {
         project: { type: 'string' },
         url: {
           type: 'string',
-          description: 'Single URL to benchmark. Use this for the common npx MCP flow.'
+          description: 'URL to benchmark. Required for the npx MCP flow.'
         },
         id: {
           type: 'string',
@@ -110,27 +117,16 @@ const tools = [
           type: 'string',
           description: 'Target label used with url. Defaults to the URL hostname.'
         },
-        targets: {
-          type: 'array',
-          description: 'Inline targets for comparing multiple URLs. Use this or url or targetFile.',
-          items: {
-            type: 'object',
-            additionalProperties: false,
-            required: ['id', 'label', 'url'],
-            properties: {
-              id: { type: 'string' },
-              label: { type: 'string' },
-              url: { type: 'string' }
-            }
-          }
-        },
-        targetFile: { type: 'string' },
         runs: { type: 'number', default: 5 },
         network: { type: 'string', enum: ['fast4g', 'slow4g'], default: 'fast4g' },
         cache: { type: 'string', enum: ['cold', 'warm'], default: 'cold' },
         cpu: { type: 'number', default: 4 },
         settleMs: { type: 'number', default: 3000 },
-        timeoutMs: { type: 'number', default: 600000 }
+        timeoutMs: { type: 'number', default: 600000 },
+        chromePath: {
+          type: 'string',
+          description: 'Optional Chrome executable path. Defaults to CHROME_PATH or config/profiles.json.'
+        }
       }
     }
   }
@@ -275,7 +271,7 @@ async function dispatch(method, params) {
 async function callTool(name, args) {
   switch (name) {
     case 'doctor':
-      return toolResult(await runNodeScript('scripts/doctor.mjs', []));
+      return jsonToolResult(await runDoctor({ chromePath: args.chromePath }));
     case 'list_results':
       return jsonToolResult(await listRawResults());
     case 'summarize_latest_result':
@@ -356,35 +352,24 @@ async function runBenchmark(args) {
   let tempDir;
   const scriptArgs = [];
 
-  if (args.targets) {
-    const targetConfig = normalizeTargetConfig({
-      project: args.project,
-      targets: args.targets
-    });
-    tempDir = await mkdtemp(path.join(tmpdir(), 'mobile-perf-mcp-'));
-    const targetPath = path.join(tempDir, 'target.json');
-    await writeFile(targetPath, `${JSON.stringify(targetConfig, null, 2)}\n`);
-    scriptArgs.push('--target-file', targetPath);
-  } else if (args.url) {
-    const targetConfig = normalizeTargetConfig({
-      project: args.project,
-      targets: [
-        {
-          id: args.id || 'target',
-          label: args.label || hostnameLabel(args.url),
-          url: args.url
-        }
-      ]
-    });
-    tempDir = await mkdtemp(path.join(tmpdir(), 'mobile-perf-mcp-'));
-    const targetPath = path.join(tempDir, 'target.json');
-    await writeFile(targetPath, `${JSON.stringify(targetConfig, null, 2)}\n`);
-    scriptArgs.push('--target-file', targetPath);
-  } else if (args.targetFile) {
-    scriptArgs.push('--target-file', args.targetFile);
-  } else {
-    throw new Error('run_benchmark requires url, targets, or targetFile when used through MCP. npx installs do not include a user target.json.');
+  if (!args.url) {
+    throw new Error('run_benchmark requires url. The npx MCP entry does not read target.json.');
   }
+
+  const targetConfig = normalizeTargetConfig({
+    project: args.project,
+    targets: [
+      {
+        id: args.id || 'target',
+        label: args.label || hostnameLabel(args.url),
+        url: args.url
+      }
+    ]
+  });
+  tempDir = await mkdtemp(path.join(tmpdir(), 'mobile-perf-mcp-'));
+  const targetPath = path.join(tempDir, 'target.json');
+  await writeFile(targetPath, `${JSON.stringify(targetConfig, null, 2)}\n`);
+  scriptArgs.push('--target-file', targetPath);
 
   scriptArgs.push(
     '--runs', String(args.runs ?? 5),
@@ -393,6 +378,10 @@ async function runBenchmark(args) {
     '--cpu', String(args.cpu ?? 4),
     '--settleMs', String(args.settleMs ?? 3000)
   );
+
+  if (args.chromePath) {
+    scriptArgs.push('--chromePath', args.chromePath);
+  }
 
   try {
     const output = await runNodeScript('scripts/run-benchmark.mjs', scriptArgs, args.timeoutMs ?? 600000);

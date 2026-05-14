@@ -1,39 +1,24 @@
-import { access, readFile } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { runDoctor } from '../src/doctor.mjs';
 
-const execFileAsync = promisify(execFile);
+const args = parseArgs(process.argv.slice(2));
+const result = await runDoctor({ chromePath: args.chromePath });
 
-const profile = JSON.parse(await readFile(new URL('../config/profiles.json', import.meta.url), 'utf8'));
-const chromePath = process.env.CHROME_PATH || profile.defaults.chromePath;
-
-const checks = [];
-
-checks.push({
-  name: 'Node.js >= 22',
-  ok: Number(process.versions.node.split('.')[0]) >= 22,
-  detail: process.version
-});
-
-try {
-  await access(chromePath, constants.X_OK);
-  checks.push({ name: 'Chrome executable', ok: true, detail: chromePath });
-} catch {
-  checks.push({ name: 'Chrome executable', ok: false, detail: chromePath });
-}
-
-try {
-  const { stdout } = await execFileAsync(chromePath, ['--version'], { timeout: 5000 });
-  checks.push({ name: 'Chrome version', ok: true, detail: stdout.trim() });
-} catch (error) {
-  checks.push({ name: 'Chrome version', ok: false, detail: error.message });
-}
-
-for (const check of checks) {
+for (const check of result.checks) {
   console.log(`${check.ok ? 'OK ' : 'ERR'} ${check.name}: ${check.detail}`);
 }
 
-if (checks.some((check) => !check.ok)) {
+if (!result.ready) {
   process.exitCode = 1;
+}
+
+function parseArgs(argv) {
+  const options = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg.startsWith('--')) continue;
+    const key = arg.slice(2);
+    const value = argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[++index] : true;
+    options[key] = value;
+  }
+  return options;
 }
