@@ -142,18 +142,34 @@ function parseArgs(argv, defaults) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2);
+    const key = camelCaseFlag(arg.slice(2));
     const value = argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[++index] : true;
     options[key] = value;
   }
 
-  return {
+  const parsed = {
     ...options,
     runs: Number(options.runs),
     cpu: Number(options.cpu),
     settleMs: Number(options.settleMs),
     cache: String(options.cache || 'cold')
   };
+
+  if (!Number.isInteger(parsed.runs) || parsed.runs < 1) {
+    throw new Error('--runs must be an integer greater than or equal to 1.');
+  }
+  if (!Number.isFinite(parsed.cpu) || parsed.cpu < 1) {
+    throw new Error('--cpu must be a number greater than or equal to 1.');
+  }
+  if (!Number.isFinite(parsed.settleMs) || parsed.settleMs < 0) {
+    throw new Error('--settle-ms must be a number greater than or equal to 0.');
+  }
+
+  return parsed;
+}
+
+function camelCaseFlag(value) {
+  return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
 async function launchChrome(chromePath, port, userDataDir) {

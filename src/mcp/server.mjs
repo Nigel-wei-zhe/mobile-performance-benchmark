@@ -117,12 +117,12 @@ const tools = [
           type: 'string',
           description: 'Target label used with url. Defaults to the URL hostname.'
         },
-        runs: { type: 'number', default: 5 },
+        runs: { type: 'integer', minimum: 1, default: 5 },
         network: { type: 'string', enum: ['fast4g', 'slow4g'], default: 'fast4g' },
         cache: { type: 'string', enum: ['cold', 'warm'], default: 'cold' },
-        cpu: { type: 'number', default: 4 },
-        settleMs: { type: 'number', default: 3000 },
-        timeoutMs: { type: 'number', default: 600000 },
+        cpu: { type: 'number', minimum: 1, default: 4 },
+        settleMs: { type: 'number', minimum: 0, default: 3000 },
+        timeoutMs: { type: 'number', minimum: 1000, default: 600000 },
         chromePath: {
           type: 'string',
           description: 'Optional Chrome executable path. Defaults to CHROME_PATH or config/profiles.json.'
